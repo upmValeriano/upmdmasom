@@ -18,7 +18,13 @@ class som:
                  dimension = 3,
                  vmin =  0,
                  vmax =  1,
-                 vicinity = "rectangular"):
+                 vicinity = "rectangular",
+                 learn_rate=.1,
+                 radius_sq=1,
+                 lr_decay=.1,
+                 radius_decay=.1,
+                 epochs=10
+                 ):
         self.nrows = nrows
         self.ncols = ncols
         self.dimension = dimension
@@ -26,6 +32,11 @@ class som:
         self.vmax = vmax
         self.vicinity = vicinity
         self._createSOM()
+        self.learn_rate = learn_rate
+        self.radius_sq = radius_sq
+        self.lr_decay = lr_decay
+        self.radius_decay = radius_decay
+        self.epochs = epochs
         print('clase iniciada')
 
     def _createSOM(self):
@@ -36,45 +47,44 @@ class som:
         self.SOM = SOM
 
     #
-    def find_BMU(SOM, x):
-        distSq = (np.square(SOM - x)).sum(axis=2)
+    def find_BMU(self, x):
+        distSq = (np.square(self.SOM - x)).sum(axis=2)
         return np.unravel_index(np.argmin(distSq, axis=None), distSq.shape)
 
-    def update_weights(SOM, train_ex, learn_rate, radius_sq,
-                       BMU_coord, step=3):
+    def update_weights(self,
+                       train_ex,
+                       learn_rate_t,
+                       radius_sq_t,
+                       BMU_coord,
+                       step=3):
         g, h = BMU_coord
 
-        if radius_sq < 1e-3:
-            SOM[g, h, :] += learn_rate * (train_ex - SOM[g, h, :])
-            return SOM
+        if radius_sq_t < 1e-3:
+            self.SOM[g, h, :] += learn_rate_t * (train_ex - self.SOM[g, h, :])
+            return self
 
-        for i in range(max(0, g - step), min(SOM.shape[0], g + step)):
-            for j in range(max(0, h - step), min(SOM.shape[1], h + step)):
+        for i in range(max(0, g - step), min(self.SOM.shape[0], g + step)):
+            for j in range(max(0, h - step), min(self.SOM.shape[1], h + step)):
                 dist_sq = np.square(i - g) + np.square(j - h)
-                dist_func = np.exp(-dist_sq / 2 / radius_sq)
-                SOM[i, j, :] += learn_rate * dist_func * (train_ex - SOM[i, j, :])
-        return SOM
+                dist_func = np.exp(-dist_sq / 2 / radius_sq_t)
+                self.SOM[i, j, :] += learn_rate_t * dist_func * (train_ex - self.SOM[i, j, :])
+        return self
 
-    def train_SOM(SOM,
-                  train_data,
-                  learn_rate=.1,
-                  radius_sq=1,
-                  lr_decay=.1,
-                  radius_decay=.1,
-                  epochs=10
-                  ):
-        learn_rate_0 = learn_rate
-        radius_0 = radius_sq
-        for epoch in np.arange(0, epochs):
-            rand.shuffle(train_data)
+    def train_SOM(self,train_data):
+        for epoch in np.arange(0, self.epochs):
+
+            learn_rate_t = self.learn_rate * np.exp(-epoch * lr_decay)
+            radius_sq_t = radius_sq * np.exp(-epoch * radius_decay)
+
+            np.random.shuffle(train_data)
             for train_ex in train_data:
-                g, h = find_BMU(SOM, train_ex)
-                SOM = update_weights(SOM, train_ex,
-                                     learn_rate, radius_sq, (g, h))
+                g, h = find_BMU(train_ex)
+                self.update_weights(train_ex,
+                                    learn_rate_t,
+                                    radius_sq_t,
+                                    (g, h))
 
-            learn_rate = learn_rate_0 * np.exp(-epoch * lr_decay)
-            radius_sq = radius_0 * np.exp(-epoch * radius_decay)
-        return SOM
+        return self
 
 
 
