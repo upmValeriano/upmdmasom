@@ -73,12 +73,12 @@ class som:
     def train_SOM(self,train_data):
         for epoch in np.arange(0, self.epochs):
 
-            learn_rate_t = self.learn_rate * np.exp(-epoch * lr_decay)
-            radius_sq_t = radius_sq * np.exp(-epoch * radius_decay)
+            learn_rate_t = self.learn_rate * np.exp(-epoch * self.lr_decay)
+            radius_sq_t = self.radius_sq * np.exp(-epoch * self.radius_decay)
 
             np.random.shuffle(train_data)
             for train_ex in train_data:
-                g, h = find_BMU(train_ex)
+                g, h = self.find_BMU(train_ex)
                 self.update_weights(train_ex,
                                     learn_rate_t,
                                     radius_sq_t,
