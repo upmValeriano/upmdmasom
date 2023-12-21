@@ -23,8 +23,10 @@ class som:
                  radius_sq=1,
                  lr_decay=.1,
                  radius_decay=.1,
-                 epochs=10
+                 #epochs=10,
+                 randomState = 0
                  ):
+        self.RDS = np.random.RandomState(randomState)
         self.nrows = nrows
         self.ncols = ncols
         self.dimension = dimension
@@ -36,11 +38,11 @@ class som:
         self.radius_sq = radius_sq
         self.lr_decay = lr_decay
         self.radius_decay = radius_decay
-        self.epochs = epochs
+        #self.epochs = epochs
         print('clase iniciada')
 
     def _createSOM(self):
-        SOM = np.random.rand(self.nrows,
+        SOM = self.RDS.rand(self.nrows,
                              self.ncols,
                              self.dimension)
         SOM = SOM * (self.vmax-self.vmin)+self.vmin
@@ -70,13 +72,13 @@ class som:
                 self.SOM[i, j, :] += learn_rate_t * dist_func * (train_ex - self.SOM[i, j, :])
         return self
 
-    def train_SOM(self,train_data):
-        for epoch in np.arange(0, self.epochs):
+    def train_SOM(self,train_data,epochs):
+        for epoch in np.arange(0, epochs):
 
             learn_rate_t = self.learn_rate * np.exp(-epoch * self.lr_decay)
             radius_sq_t = self.radius_sq * np.exp(-epoch * self.radius_decay)
 
-            np.random.shuffle(train_data)
+            self.RDS.shuffle(train_data)
             for train_ex in train_data:
                 g, h = self.find_BMU(train_ex)
                 self.update_weights(train_ex,
