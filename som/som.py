@@ -39,7 +39,6 @@ class som:
         self.lr_decay = lr_decay
         self.radius_decay = radius_decay
         #self.epochs = epochs
-        print('clase iniciada')
 
     def _createSOM(self):
         SOM = self.RDS.rand(self.nrows,
