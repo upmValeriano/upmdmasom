@@ -182,4 +182,32 @@ class som:
         assert len(y_pred.shape) == len(y_test.shape), "y_pred e y_test deben ser 2 arrays de una dimensión"
         assert y_pred.shape[0] == y_test.shape[0], "y_pred e y_test deben ser 2 arrays de igual longitud"
         return len(y_pred[y_pred == y_test])/len(y_pred)
+        
+    def coordenadasNeurona(self,fila,columna):
+        posx=posy=0
+        
+        if self.vicinity == "regular":
+            posx = fila
+            posy = columna
+        elif self.vicinity == "hexagonal":
+            
+            # dimensiones del hexagono regular:
+            # radio circulo cincunscrito
+            ru = 1 # igual a longitud de un lado
+            # radio circulo inscrito
+            ri = np.sqrt(3)/2*ru # cos(30)*ru
+            
+            dx = 2*ri # desplazamiento en x
+            dy = 3*ru/2
+
+            if fila%2==0:
+                # fila par
+                posxinit = ri
+            else:
+                posxinit = 0
+                
+            posx = posxinit + (columna-1)*dx
+            posy = (fila-1)*dy
+            
+	return posx,posy
 
