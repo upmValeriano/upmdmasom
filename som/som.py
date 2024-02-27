@@ -48,10 +48,24 @@ class som:
         SOM = SOM * (self.vmax-self.vmin)+self.vmin
         self.SOM = SOM
 
-    #
+    
+    def squareOfDistance(x1,x2):
+        SOQ = np.square(x1-x2).sum(axis=2)
+        return SOQ
+   
     def find_BMU(self, x):
-        distSq = (np.square(self.SOM - x)).sum(axis=2)
-        return np.unravel_index(np.argmin(distSq, axis=None), distSq.shape)
+    '''
+    x: input data
+    return: row and col of the BMU
+    '''
+        #dist = (np.square(self.SOM - x)).sum(axis=2)
+        dist = squareOfDistance(self.SOM,x)
+        nrow,ncol = np.unravel_index(np.argmin(dist, axis=None), dist.shape)
+        return nrow,ncol
+
+    def find_BMU2(self,x):
+    
+        return True
 
     def update_weights(self,
                        train_ex,
@@ -59,16 +73,27 @@ class som:
                        radius_sq_t,
                        BMU_coord,
                        step=3):
-        g, h = BMU_coord
+        
+        # TODO: review STEP (neccessary?)
+        
+        bmu_row, bmu_col = BMU_coord
 
-        if radius_sq_t < 1e-3:
-            self.SOM[g, h, :] += learn_rate_t * (train_ex - self.SOM[g, h, :])
+        if radius_sq_t < 1e-3: # only update BMU vector
+            self.SOM[bmu_row, bmu_col, :] += learn_rate_t * (train_ex - self.SOM[bmu_row, bmu_col, :])
             return self
 
-        for i in range(max(0, g - step), min(self.SOM.shape[0], g + step)):
-            for j in range(max(0, h - step), min(self.SOM.shape[1], h + step)):
-                dist_sq = np.square(i - g) + np.square(j - h)
-                dist_func = np.exp(-dist_sq / 2 / radius_sq_t)
+        posxBMU,posyBMU = coordenadasNeurona(bmu_row,bmu_col)
+
+        for i in range(max(0, bmu_row - step), min(self.SOM.shape[0], bmu_row + step)):
+            for j in range(max(0, bmu_col - step), min(self.SOM.shape[1], bmu_col + step)):
+            
+                if self.vicinity == "hexagonal":
+                        posxNeuron,posyNeuron = coordenadasNeurona(i,j)
+                        dist_sq = np.square(posxBMU - posxNeuron) + np.square(posyBMU - posyNeuron)
+                else:
+                        dist_sq = np.square(i - g) + np.square(j - h)
+                dist = np.sqrt(dist_sq)
+                dist_func = np.exp(-dist / 2 / radius_sq_t)
                 self.SOM[i, j, :] += learn_rate_t * dist_func * (train_ex - self.SOM[i, j, :])
         return self
 
@@ -128,11 +153,11 @@ class som:
 
             self.RDS.shuffle(train_data)
             for train_ex in train_data:
-                g, h = self.find_BMU(train_ex)
+                bmu_row, bmu_col = self.find_BMU(train_ex)
                 self.update_weights(train_ex,
                                     learn_rate_t,
                                     radius_sq_t,
-                                    (g, h))
+                                    (bmu_row, bmu_col))
 
         self.storeMapping(train_data)
         return self
@@ -187,8 +212,8 @@ class som:
         posx=posy=0
         
         if self.vicinity == "regular":
-            posx = fila
-            posy = columna
+                posx = fila
+                posy = columna
         elif self.vicinity == "hexagonal":
             
             # dimensiones del hexagono regular:
@@ -209,5 +234,5 @@ class som:
             posx = posxinit + (columna-1)*dx
             posy = (fila-1)*dy
             
-	return posx,posy
+        return posx,posy
 
