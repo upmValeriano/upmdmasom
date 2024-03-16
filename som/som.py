@@ -49,21 +49,28 @@ class som:
         self.SOM = SOM
 
     
-    def squareOfDistance(x1,x2):
-        SOQ = np.square(x1-x2).sum(axis=2)
-        return SOQ
+    # def squareOfDistance(x):
+    #     x1,x2 = x
+    #     SOQ = np.square(x1-x2).sum(axis=2)
+    #     return SOQ
    
     def find_BMU(self, x):
-    '''
-    x: input data
-    return: row and col of the BMU
-    '''
-        #dist = (np.square(self.SOM - x)).sum(axis=2)
-        dist = squareOfDistance(self.SOM,x)
-        nrow,ncol = np.unravel_index(np.argmin(dist, axis=None), dist.shape)
+        '''
+        x: input data
+        return: row and col of the BMU
+        '''
+        distToNeurons = (np.square(self.SOM - x)).sum(axis=2)
+        nrow,ncol = np.unravel_index(np.argmin(distToNeurons,
+                                               axis=None),
+                                     distToNeurons.shape)
         return nrow,ncol
 
-    def find_BMU2(self,x):
+    def find_BMUH(self,x):
+        '''
+        Function for Heskes99
+        :param x:
+        :return:
+        '''
     
         return True
 
@@ -71,30 +78,36 @@ class som:
                        train_ex,
                        learn_rate_t,
                        radius_sq_t,
-                       BMU_coord,
+                       BMU_grid_position,
                        step=3):
         
         # TODO: review STEP (neccessary?)
         
-        bmu_row, bmu_col = BMU_coord
+        bmu_row, bmu_col = BMU_grid_position
 
         if radius_sq_t < 1e-3: # only update BMU vector
             self.SOM[bmu_row, bmu_col, :] += learn_rate_t * (train_ex - self.SOM[bmu_row, bmu_col, :])
             return self
 
-        posxBMU,posyBMU = coordenadasNeurona(bmu_row,bmu_col)
+        bmu_x_pos, bmu_y_pos = self.neuronConvert_grid_to_R2(bmu_row,bmu_col)
 
         for i in range(max(0, bmu_row - step), min(self.SOM.shape[0], bmu_row + step)):
+            # i is neuron row
             for j in range(max(0, bmu_col - step), min(self.SOM.shape[1], bmu_col + step)):
+                # j is neuron col
             
                 if self.vicinity == "hexagonal":
-                        posxNeuron,posyNeuron = coordenadasNeurona(i,j)
-                        dist_sq = np.square(posxBMU - posxNeuron) + np.square(posyBMU - posyNeuron)
+
+                        neuron_x_pos,neuron_y_pos =  self.neuronConvert_grid_to_R2(i,j)
+                        dist_sq = np.square(bmu_x_pos - neuron_x_pos) + np.square(bmu_y_pos - neuron_y_pos)
+
                 else:
-                        dist_sq = np.square(i - g) + np.square(j - h)
+                        dist_sq = np.square(i - bmu_row) + np.square(j - bmu_col)
+
                 dist = np.sqrt(dist_sq)
                 dist_func = np.exp(-dist / 2 / radius_sq_t)
                 self.SOM[i, j, :] += learn_rate_t * dist_func * (train_ex - self.SOM[i, j, :])
+
         return self
 
     def storeMapping(self, train_data):
@@ -208,12 +221,21 @@ class som:
         assert y_pred.shape[0] == y_test.shape[0], "y_pred e y_test deben ser 2 arrays de igual longitud"
         return len(y_pred[y_pred == y_test])/len(y_pred)
         
-    def coordenadasNeurona(self,fila,columna):
+    # def neuronaConv_rowCol_posR2(self,fila,columna):
+    def neuronConvert_grid_to_R2(self, row, col):
+        '''
+        Input: row, col of a neuron
+        Output: position in euclidean space R2
+        (this may be changed to a sphere)
+        :param row:
+        :param col:
+        :return:
+        '''
         posx=posy=0
         
         if self.vicinity == "regular":
-                posx = fila
-                posy = columna
+                posx = row
+                posy = col
         elif self.vicinity == "hexagonal":
             
             # dimensiones del hexagono regular:
@@ -221,18 +243,39 @@ class som:
             ru = 1 # igual a longitud de un lado
             # radio circulo inscrito
             ri = np.sqrt(3)/2*ru # cos(30)*ru
-            
+            #
             dx = 2*ri # desplazamiento en x
             dy = 3*ru/2
 
-            if fila%2==0:
+            if row%2==0:
                 # fila par
                 posxinit = ri
             else:
                 posxinit = 0
                 
-            posx = posxinit + (columna-1)*dx
-            posy = (fila-1)*dy
+            posx = posxinit + (col-1)*dx
+            posy = (row-1)*dy
             
         return posx,posy
 
+    def neuronaConv_rowCol_index1D(self, fila, columna):
+        '''
+        Input: row,col of a neuron
+        Output: 1D index of the neuron (as if in a 1dim vector)
+        This function is inverse to neuronaConv_index1D_rowCol
+        '''
+        neuron_index = np.ravel_multi_index((fila, columna),
+                                            dims=(self.nrows,self.ncols))
+        return neuron_index
+
+    def neuronaConv_index1D_rowCol(self,neuronIndex):
+        '''
+        Input: 1D index of the neuron (as if in a 1dim vector)
+        Output: row,col of a neuron
+        This function is inverse to neuronaConv_rowCol_index1D
+        '''
+        nrow, ncol = np.unravel_index(neuronIndex, shape=(self.nrows,self.ncols))
+        return nrow, ncol
+
+    def coordenadasNeurona(self, bmu_row, bmu_col):
+        pass

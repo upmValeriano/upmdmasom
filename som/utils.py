@@ -9,6 +9,7 @@ import itertools
 import random as rd
 
 class somutils:
+
     def plot_Cluster_hexagon(pSom, n_clusters, figsize=(15,15), title='SOM con clustering y recuento de nodos'):
         ## Reformateo de las coordenadas de los pesos en cada nodo para obtener un matriz X que pasar el clustering
         X_pesos = pSom.SOM.reshape(pSom.SOM.shape[0]*pSom.SOM.shape[1], pSom.SOM.shape[2])
@@ -26,7 +27,7 @@ class somutils:
         for i in range(pSom.nrows):
             xc = 0 if i%2==0 else a  ## Se vuelve a poner la xc a su valor inicial
             for j in range(pSom.ncols):
-                
+
                 hexa = patches.RegularPolygon((xc,yc), 6, radius=r, orientation=0, facecolor=cmap(norm(y_pesos[pSom.nrows-i-1][j]))[0:3],
                                              edgecolor='w', fill=True)
                 ax.add_patch(hexa)
@@ -40,27 +41,70 @@ class somutils:
         ax.set_yticks([])
         plt.show()
 
-    def plot_neurPointsCount(pSom, figsize=(13,7), title = "Conteo por nodo"):
+    def plot_neurPointsCount(pSom, figsize=(15,15), title = "Conteo por nodo"):
         ## En la variable self.mat_count se encuentra el recuento de puntos
         fig, ax = plt.subplots(figsize=figsize)
+        ax.set_title(title, loc='left', fontstyle='oblique', fontsize='medium')
 
         # Set the font size and the distance of the title from the plot
-        plt.title(title,fontsize=18)
-        ttl = ax.title
-        ttl.set_position([0.5,1.05])
 
+        #plt.title(title,fontsize=18)
+        #ttl = ax.title
+        #ttl.set_position([0.5,1.05])
+
+
+
+        # Remove the axes
+        ax.axis('off')
+
+        if pSom.vicinity == 'rectangular':
+
+            im = ax.imshow(pSom.mat_count)
+            ax.figure.colorbar(im, ax=ax)
+            # Loop over data dimensions and create text annotations.
+            for i in range(pSom.nrows):
+                for j in range(pSom.ncols):
+                    text = ax.text(j, i, pSom.mat_count[i, j], ha="center", va="center", color="w")
+
+        elif pSom.vicinity == 'hexagonal':
+
+            # print('hexagonal')
+
+            maxCount = np.max(pSom.mat_count)
+            print('maxCount', maxCount)
+
+            cmap = mpl.colormaps["Spectral"]
+            norm = colors.Normalize(0, maxCount)
+
+            xc, yc = 0, 0  # Se inicializa el valor del centro del hexagono
+            r = 1  # Valor del radio del hexagono
+            a = r * np.sqrt(3) / 2  # Valor de la apotema
+            for i in range(pSom.nrows):
+                xc = 0 if i % 2 == 0 else a  ## Se vuelve a poner la xc a su valor inicial
+                for j in range(pSom.ncols):
+                    countValueNeuron = pSom.mat_count[i,j]
+                    hexa = patches.RegularPolygon((xc, yc), 6,
+                                                  radius=r,
+                                                  orientation=0,
+                                                  facecolor=cmap(norm(countValueNeuron)),
+                                                  # facecolor='red',
+                                                  edgecolor='w',
+                                                  fill=True)
+                    ax.add_patch(hexa)
+                    plt.text(xc,yc,str(countValueNeuron),color='k',va="center",ha="center")
+                    #plt.text(xc, yc, str(pSom.mat_count[pSom.nrows - i - 1, j]), color='k', va='center', ha='center')
+                    xc = xc + 2 * a
+                yc = yc + r + a / 2
+
+            fig.colorbar(cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax)
+        else:
+            raise ValueError("Vicinity")
+
+        ax.axis('equal')
         # Hide ticks for X & Y axis
         ax.set_xticks([])
         ax.set_yticks([])
 
-        # Remove the axes
-        ax.axis('off')
-        im = ax.imshow(pSom.mat_count)
-        ax.figure.colorbar(im, ax=ax)
-        # Loop over data dimensions and create text annotations.
-        for i in range(pSom.nrows):
-            for j in range(pSom.ncols):
-                text = ax.text(j, i, pSom.mat_count[i, j], ha="center", va="center", color="w")
         plt.show()
 
     def plot_valuesMap(pSom, labels, figsize=(15,15), title='Distribución del valor de las observaciones por neurona'):
