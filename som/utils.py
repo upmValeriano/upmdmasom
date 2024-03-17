@@ -119,7 +119,9 @@ class somutils:
             fig, axs = plt.subplots(pSom.nrows, pSom.ncols, figsize=figsize, subplot_kw=dict(polar=True))
         else:
             fig, axs = plt.subplots(pSom.nrows, pSom.ncols, figsize=figsize)
+
         plt.suptitle(title)
+
         if pSom.data_.shape[1] <= len(colores):
             colores = colores[0:pSom.data_.shape[1]]
         N=pSom.SOM.shape[2]
@@ -147,6 +149,51 @@ class somutils:
             for k in range(pSom.SOM.shape[2]):
                 #leg.legendHandles[k].set_color(colores[k])
                 leg.legend_handles[k].set_color(colores[k])
+        plt.show()
+
+    def plot_valuesMap_2(pSom, labels,
+                         figsize=(15,15),
+                         title='Distribución del valor de las observaciones por neurona',
+                         type='bar',
+                         normalize=True):
+        '''
+        funciona
+        :param labels:
+        :param figsize:
+        :param title:
+        :param type:
+        :param normalize:
+        :return:
+        '''
+
+        somFlat = pSom.SOM.reshape((pSom.SOM.shape[0] * pSom.SOM.shape[1], pSom.SOM.shape[2]))
+        # media = np.mean(somFlat, axis=0)
+        # desv = np.std(somFlat, axis=0)
+        max = np.max(somFlat, axis=0)
+        min = np.min(somFlat, axis=0)
+
+        #colores = ['red', 'green', 'blue', 'orange', 'purple']
+        colores = ['blue', 'green', 'red', 'cyan', 'magenta', 'yellow', 'black', 'white', 'orange', 'purple']
+
+        fig, axs = plt.subplots(pSom.nrows, pSom.ncols, figsize=figsize)
+        for i in range(pSom.nrows):
+            for j in range(pSom.ncols):
+                if normalize:
+                    data = (pSom.SOM[i, j] - min) / (max - min)
+                    axs[i, j].set_ylim([0, 1])
+                    if (j != 0):
+                        axs[i, j].set_yticks([])
+
+                else:
+                    data = pSom.SOM[i, j]
+                if type == 'bar':
+                    axs[i, j].bar(range(len(data)),
+                                  data, color=['red', 'green', 'blue', 'orange'])
+                    axs[i, j].set_xticks([])
+        leg = fig.legend(labels, loc='lower right', bbox_to_anchor=(1, 1))
+        for k in range(pSom.SOM.shape[2]):
+            leg.legend_handles[k].set_color(colores[k])
+        plt.tight_layout()
         plt.show()
 
     def plot_heatmaps(pSom, labels, ilabMap, figsize=(13,7), title = "mapas de Calor"):
